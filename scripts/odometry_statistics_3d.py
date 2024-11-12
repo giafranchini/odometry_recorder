@@ -4,8 +4,9 @@ from scipy.stats import norm
 from os.path import expanduser
 home = expanduser("~")
 
-FUSE_ODOMETRY_PATH = f'{home}/iron_ws/src/odometry_recorder/data/fuse_odom.csv'
-RL_ODOMETRY_PATH = f'{home}/iron_ws/src/odometry_recorder/data/rl_odom.csv'
+TRAJECTORIES = ['gnss', 'wheels']
+PATHS = ['/home/giacomo/ros2_iron_ws/src/odometry_recorder/data/emrs_localisation_roxy_loop_0/emrs_odometry_filtered_transf_sync_rotated.csv', '/home/giacomo/ros2_iron_ws/src/odometry_recorder/data/emrs_localisation_roxy_loop_0/gnss_odom_sync.csv']
+COLORS = ['red', 'blue', 'green']
 
 def read_data(path):
     file = open(path, 'r')
@@ -87,31 +88,65 @@ def plot_residuals(first, second):
 
     plt.show()
 
-def plot_trajectory(first, second):
-
+def plot_trajectories(trajectories):
     ax = plt.figure().add_subplot(projection='3d')
     ax.set_title('Trajectory XYZ')
-    ax.plot(first[:,1], first[:,2], first[:,3], color='red', alpha=1, label='RL odometry')
-    ax.plot(second[:,1], second[:,2], second[:,3], color='blue', alpha=1, label='Fuse odometry')
+    for i, t in enumerate(trajectories):
+        print(len(t))
+        ax.plot(t[:,1], t[:,2], t[:,3], color=COLORS[i], alpha=1, label=f'{TRAJECTORIES[i]} odometry')
+        ax.text(t[0,1], t[0,2], t[0,3], 'Start', fontsize=12, color='black')
+        ax.text(t[-1,1], t[-1,2], t[-1,3], 'End', fontsize=12, color='black')
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+    ax.legend()
+    plt.show()
+
+def plot_trajectories_2d(first, second):
+    
+    ax = plt.figure().add_subplot()
+    ax.set_title('Trajectory XY')
+    ax.plot(first[:,1], first[:,2], color='red', alpha=1, label=f'{TRAJ0} odometry')
+    ax.plot(second[:,1], second[:,2], color='blue', alpha=1, label=f'{TRAJ1} odometry')
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    
+    # Indicate start/end points
+    ax.text(first[0,1], first[0,2], 'Start', fontsize=12, color='green')
+    ax.text(first[-1, 1], first[-1,2], 'End', fontsize=12, color='red')
     ax.legend()
     # ax.tight_layout(h_pad=1.0)
 
     plt.show()
 
+def plot_boxplot(first, second):
+    res = first - second
+    labels = ['X', 'Y', 'Z', 'Roll', 'Pitch', 'Yaw']
+    _, (ax) = plt.subplots(nrows=1, ncols=1, figsize=(9, 4))
+
+    bplot = ax.boxplot(res[:,1:], patch_artist=True, labels=labels)
+    ax.set_title('Residuals boxplot')
+
+    # fill with colors
+
+    colors = ['pink', 'lightblue', 'lightgreen', 'lightyellow', 'lightgrey', 'lightcoral']
+    for patch, color in zip(bplot['boxes'], colors):
+        patch.set_facecolor(color)
+
+    # adding horizontal grid lines
+    ax.yaxis.grid(True)
+    ax.set_xlabel('Residuals [m, rad]')
+    ax.set_ylabel('Observed values') 
+
+    plt.show()
+
 def main():
-    rl_odom   = read_data(RL_ODOMETRY_PATH)
-    fuse_odom = read_data(FUSE_ODOMETRY_PATH)
-    rl_odom   = subsample(np.delete(rl_odom, 0, axis=0))
-    fuse_odom = subsample(np.delete(fuse_odom, 0, axis=0))
-
-    t_diff = rl_odom.shape[0] - fuse_odom.shape[0]
-    if t_diff > 0:
-        rl_odom = rl_odom[:-t_diff]
-    elif t_diff < 0:
-        fuse_odom = fuse_odom[:-t_diff]
-
-    plot_residuals(rl_odom, fuse_odom)
-    plot_trajectory(rl_odom, fuse_odom)
+    odometry_data = list()
+    for i in range(len(TRAJECTORIES)):
+        odometry_data.append(read_data(PATHS[i]))
+    plot_trajectories(odometry_data)
+    # plot_trajectories_2d(ODOMS)
+    # plot_boxplot(odometry_data[0], odometry_data[1])
 
 if __name__ == '__main__':
     main()

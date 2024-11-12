@@ -1,33 +1,68 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from nav_msgs.msg import Odometry
 from math import atan2, asin, pi
+from os.path import expanduser
+
+home = expanduser("~")
 
 class OdometryRecorder(Node):
 
     def __init__(self):
         super().__init__('odometry_recorder')
-        self.declare_parameter('topic_name', 'odometry')
-        self.declare_parameter('output_file', 'odometry_output.csv')
-        self.topic_name = self.get_parameter('topic_name').get_parameter_value().string_value
-        self.file_path = self.get_parameter('output_file').get_parameter_value().string_value
-        self.file = open(self.file_path, 'w', newline='')
-        self.file.write('time,x,y,yaw\n') 
-        self.subscription = self.create_subscription(
-            Odometry,
-            self.topic_name,
-            self.listener_callback,
-            10)
-        self.subscription  # prevent unused variable warning
-        print('Odometry recorder node initialized')
+        self.declare_parameter('topic_names', ['odometry0', 'odometry1'])
+        self.declare_parameter('output_folder', home)
+        self.declare_parameter('rpy_orientation', False)
 
-    def listener_callback(self, msg):
-        self.get_logger().info('Writing data to csv file')
+        self.topic_names = self.get_parameter('topic_names').get_parameter_value().string_array_value
+        output_folder = self.get_parameter('output_folder').get_parameter_value().string_value
+        self.folder_path = f'{home}/ros2_iron_ws/src/odometry_recorder/data/{output_folder}'
+        self.rpy_orientation = self.get_parameter('rpy_orientation').get_parameter_value().bool_value
+        self.get_logger().info('Data will be saved to: ' + self.folder_path)
+
+        self.my_callback_group = ReentrantCallbackGroup()
+        self.subs = list()
+        for topic in self.topic_names: 
+            self.subs.append(
+                self.create_subscription(
+                    Odometry,
+                    topic,
+                    lambda msg: self.listener_callback(msg, topic),
+                    10,
+                    callback_group=self.my_callback_group))
+            self.get_logger().info('Subscripted to topic: ' + topic)
+        self.get_logger().info('Odometry recorder node initialized')
+
+    def listener_callback(self, msg, topic):
+        topic = topic.replace('/', '_')[1:]
+        file = open(f'{self.folder_path}/{topic}.csv', 'a+', newline='')
+        self.get_logger().info('Writing data from topic: ' + topic + ' to file: ' + file.name)
         stamp = msg.header.stamp
         position = msg.pose.pose.position
         quat = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
-        rpy = self.quat2eul(quat)
-        self.file.write(str(stamp.sec) + ',' + str(round(position.x, 4)) + ',' + str(round(position.y, 4)) + ',' + str(round(rpy[2], 4)) + '\n')
+        
+        if (self.rpy_orientation):
+            rpy = self.quat2eul(quat)
+            file.write(
+                str(stamp.sec) + ',' + 
+                str(position.x) + ',' + 
+                str(position.y) + ',' + 
+                str(position.z) + ',' +
+                str(rpy[0]) + ',' +
+                str(rpy[1]) + ',' +
+                str(rpy[2]) + '\n')
+        else:
+            file.write(
+                str(stamp.sec) + ',' + 
+                str(position.x) + ',' + 
+                str(position.y) + ',' + 
+                str(position.z) + ',' +
+                str(quat[0]) + ',' +
+                str(quat[1]) + ',' +
+                str(quat[2]) + ',' +
+                str(quat[3]) + '\n')
     
     def quat2eul(self, quat):
         discr = quat[3]*quat[1] - quat[2]*quat[0]

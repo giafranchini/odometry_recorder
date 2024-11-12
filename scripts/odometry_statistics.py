@@ -4,8 +4,8 @@ from scipy.stats import norm
 from os.path import expanduser
 home = expanduser("~")
 
-FUSE_ODOMETRY_PATH = f'{home}/humble_ws/src/odometry_recorder/data/fuse_odometry2d.csv'
-RL_ODOMETRY_PATH = f'{home}/humble_ws/src/odometry_recorder/data/rl_odometry2d.csv'
+FUSE_ODOMETRY_PATH = f'{home}/ros2_iron_ws/src/odometry_recorder/data/fuse_odom.csv'
+RL_ODOMETRY_PATH = f'{home}/ros2_iron_ws/src/odometry_recorder/data/rl_odom.csv'
 
 def read_data(path):
     file = open(path, 'r')
