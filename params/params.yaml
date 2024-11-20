@@ -1,0 +1,5 @@
+odometry_recorder:
+  ros__parameters_:
+    topic_names: ['/emrs/odometry/filtered_transf/sync', '/gnss/odom/sync']
+    output_folder: emrs_localisation_roxy_loop_0
+    rpy_orientation: false
