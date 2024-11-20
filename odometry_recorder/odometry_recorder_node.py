@@ -5,6 +5,7 @@ from rclpy.executors import MultiThreadedExecutor
 from nav_msgs.msg import Odometry
 from math import atan2, asin, pi
 from os.path import expanduser
+from pathlib import Path
 
 home = expanduser("~")
 
@@ -16,10 +17,11 @@ class OdometryRecorder(Node):
         self.declare_parameter('output_folder', home)
         self.declare_parameter('rpy_orientation', False)
 
+        self.rpy_orientation = self.get_parameter('rpy_orientation').get_parameter_value().bool_value
         self.topic_names = self.get_parameter('topic_names').get_parameter_value().string_array_value
         output_folder = self.get_parameter('output_folder').get_parameter_value().string_value
         self.folder_path = f'{home}/ros2_iron_ws/src/odometry_recorder/data/{output_folder}'
-        self.rpy_orientation = self.get_parameter('rpy_orientation').get_parameter_value().bool_value
+        Path(self.folder_path).mkdir(parents=True, exist_ok=True)
         self.get_logger().info('Data will be saved to: ' + self.folder_path)
 
         self.my_callback_group = ReentrantCallbackGroup()
