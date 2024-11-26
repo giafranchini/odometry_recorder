@@ -44,6 +44,8 @@ class OdometryRecorder(Node):
         stamp = msg.header.stamp
         position = msg.pose.pose.position
         quat = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
+        linear_vel = msg.twist.twist.linear
+        angular_vel = msg.twist.twist.angular
         
         if (self.rpy_orientation):
             rpy = self.quat2eul(quat)
@@ -54,7 +56,13 @@ class OdometryRecorder(Node):
                 str(position.z) + ',' +
                 str(rpy[0]) + ',' +
                 str(rpy[1]) + ',' +
-                str(rpy[2]) + '\n')
+                str(rpy[2]) + ',' +
+                str(linear_vel.x) + ',' +
+                str(linear_vel.y) + ',' +
+                str(linear_vel.z) + ',' +
+                str(angular_vel.x) + ',' +
+                str(angular_vel.y) + ',' +
+                str(angular_vel.z) + '\n')
         else:
             file.write(
                 str(stamp.sec) + ',' + 
@@ -64,7 +72,13 @@ class OdometryRecorder(Node):
                 str(quat[0]) + ',' +
                 str(quat[1]) + ',' +
                 str(quat[2]) + ',' +
-                str(quat[3]) + '\n')
+                str(quat[3]) + ',' +
+                str(linear_vel.x) + ',' +
+                str(linear_vel.y) + ',' +
+                str(linear_vel.z) + ',' +
+                str(angular_vel.x) + ',' +
+                str(angular_vel.y) + ',' +
+                str(angular_vel.z) + '\n')
     
     def quat2eul(self, quat):
         discr = quat[3]*quat[1] - quat[2]*quat[0]
