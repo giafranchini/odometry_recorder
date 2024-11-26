@@ -1,38 +1,51 @@
 
 import numpy as np
-from utils import read_data, TRAJECTORY_PATHS, TRAJECTORY_NAMES
+from utils import read_data, load_params
 from transform import rotate, translate
-from plotting import plot_trajectories, plot_residuals, plot_boxplot
-from metrics import ate, re_statistics, trajectory_length
-
-SOURCE = 1 # 0 for robot_localization, 1 for fuse
+from plotting import *
+from metrics import *
 
 def main():
-    # First we need to transform the odometry data from the odom frame to the local cartesian frame 
-    t = np.array([0.485, 0.235, -0.77])
-    yaw = -0.0873 
+    params = load_params('/home/giacomo/ros2_iron_ws/src/odometry_recorder/scripts/params.yaml')
+    trajectories = params['trajectories']
+    transform = params['alignment']
+    metrics = params['metrics']
+    plotting = params['plotting']
+
     odometry_data = list()
-    for i in range(len(TRAJECTORY_NAMES)):
-        odom = read_data(TRAJECTORY_PATHS[i])
+    for _, value in trajectories.items():
+        name = value[0]
+        data_path = value[-1]
+        odom = read_data(data_path)
         
-        if TRAJECTORY_NAMES[i] != 'gnss':
+        if transform['align'] and name != 'Ground Truth':
+            yaw = transform['yaw']
+            t = transform['translation']
             odom[:, [1, 2, 3]] = rotate(odom[:, [1, 2, 3]], 'z', yaw)
             odom[:, [1, 2, 3]] = translate(odom[:, [1, 2, 3]], t)
+        
         odometry_data.append(odom)
-    # plot_trajectories(odometry_data, two_d=False)
-    # plot_trajectories(odometry_data, two_d=True)
-    # plot_residuals(odometry_data[1:], plot_orientation=False)
-    # plot_boxplot(odometry_data[1:], plot_orientation=False)
-    motion_model = 'omnidirectional_3d' if 'omnidirectional_3d' in TRAJECTORY_PATHS[0] else 'emrs' 
-    print("Robot localization motion model: omnidirectional_3d")
-    print(f"Fuse motion model: {motion_model}")
-    print(f"Calculating metrics for odometry source {TRAJECTORY_NAMES[SOURCE]} wrt {TRAJECTORY_NAMES[2]}")
-    l = trajectory_length(odometry_data[2])
-    traj_error = ate([odometry_data[SOURCE], odometry_data[2]])
-    relative_traj_error = re_statistics([odometry_data[SOURCE], odometry_data[2]], 10000, int(0.05 * l))
-    print(f"Trajectory length: {l} [m]")
-    print(f"Absolute trajectory error: \n\tATE: {traj_error} [m], ATE%: {(traj_error / l) * 100} [%]")
-    print(f"Relative trajectory error: \n\tMean: {relative_traj_error[0]} [m], Std: {relative_traj_error[1]} [m]")
+    
+    if plotting['plot']:
+        # plot_motion_data(odometry_data, plot_velocities=True)
+        # plot_trajectories(odometry_data, params=trajectories, two_d=False)
+        plot_animated_trajectories(odometry_data, params=trajectories, two_d=False)
+        # plot_residuals(odometry_data, plot_orientation=False)
+        # plot_boxplot(odometry_data, plot_velocities=True)
+
+    if (metrics['compute']):
+        l = trajectory_length(odometry_data[-1])
+        absolute_error = ate([odometry_data[0], odometry_data[-1]])
+        relative_error = re_statistics(
+            [odometry_data[0], odometry_data[-1]], 
+            metrics['re_samples'], 
+            int(np.ceil(metrics['re_interval'] * len(odometry_data[0])))
+        )
+        
+        print(f"Calculating metrics between: {trajectories['traj0'][0]} odometry wrt {trajectories['traj1'][0]} odometry")
+        print(f"\nTrajectory length: {l} [m]")
+        print(f"\nAbsolute trajectory error: \n\tATE: {absolute_error} [m], ATE%: {(absolute_error / l) * 100} [%]")
+        print(f"\nRelative trajectory error: \n\tMean: {relative_error[0]} [m], Std: {relative_error[1]} [m]")
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,19 @@
+odometry_recorder:
+    # Dictionary where every key is a trajectory with values: [name, color, path]
+    trajectories:
+        traj0: ['Estimated', 'red', '/home/giacomo/ros2_iron_ws/src/odometry_recorder/data/chrono/roccia/emrs/emrs_fuse_odometry_filtered_sync.csv']
+        traj1: ['Ground Truth', 'blue', '/home/giacomo/ros2_iron_ws/src/odometry_recorder/data/chrono/roccia/emrs/emrs_odom_ground_truth_sync.csv']
+   
+    # Roto-translation to align the odometry data wrt ground truth (Optional)
+    alignment:
+        align: False
+        translation: [0.485, 0.235, -0.77]
+        yaw: -0.0873
+
+    metrics:
+        compute: False
+        re_samples: 1000
+        re_interval: 0.1
+
+    plotting:
+        plot: True

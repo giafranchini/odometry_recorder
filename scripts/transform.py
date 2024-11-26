@@ -21,3 +21,8 @@ def rotate(data : np.ndarray, axis : str, angle : float) -> np.ndarray:
 
 def translate(data : np.ndarray, v : np.ndarray) -> np.ndarray:
     return data + v
+
+def wrap_angle_2d(angle : float) -> float:
+    return angle - 2.0 * np.pi * np.floor((angle + np.pi) / (2.0 * np.pi))
+
+vec_wrap_angle_2d = np.vectorize(wrap_angle_2d)

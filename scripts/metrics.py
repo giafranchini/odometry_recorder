@@ -11,7 +11,6 @@ def ate(data : list) -> float:
     return np.sqrt(np.mean(np.sum(data[0][:, 1:4] - data[1][:, 1:4], axis=1)**2))
 
 def re(data : list, indices : list) -> float:
-    data = check_shapes(data)
     return ate([data[0][indices[0]:indices[1]], data[1][indices[0]:indices[1]]])
 
 def re_statistics(data : list, n_samples : int, length : int) -> tuple:

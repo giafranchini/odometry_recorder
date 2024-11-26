@@ -1,15 +1,5 @@
 import numpy as np
-from os.path import expanduser
-
-TRAJECTORY_NAMES = ['robot_localization', 'fuse', 'gnss']
-COLORS = ['red', 'blue', 'green']
-TRAJECTORY_PATHS = [expanduser("~") + '/ros2_iron_ws/src/odometry_recorder/data/' + path for path in 
-    [
-        'emrs_localisation_roxy_loop_1/emrs/emrs_odometry_filtered_rl_transf_sync.csv', 
-        'emrs_localisation_roxy_loop_1/emrs/emrs_odometry_filtered_transf_sync.csv', 
-        'emrs_localisation_roxy_loop_1/emrs/gnss_odom_sync.csv'
-    ]
-]
+import yaml
 
 def read_data(path : str) -> np.ndarray:
   file = open(path, 'r')
@@ -31,3 +21,7 @@ def check_shapes(data : list) -> list:
     data[0] = first
     data[1] = second
   return data
+
+def load_params(path : str) -> dict:
+    with open(path) as params:
+      return yaml.load(params)['odometry_recorder']
